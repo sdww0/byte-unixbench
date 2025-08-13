@@ -109,6 +109,7 @@ char    *argv[];
 
     int status;
     int i;
+    char* prefix = NULL;
 
     for (i = 1; i < argc; ++i) {
         if (argv[i][0] == '-') {
@@ -133,12 +134,15 @@ char    *argv[];
                         exit(1);
                     }
                     break;
+                case 'p':
+                    prefix = argv[++i];
+                    break;
                 default:
-                    fprintf(stderr, "Usage: fstime [-c|-r|-w] [-b <bufsize>] [-m <max_blocks>] [-t <seconds>]\n");
+                    fprintf(stderr, "Usage: fstime [-c|-r|-w] [-b <bufsize>] [-m <max_blocks>] [-t <seconds>] [-p <prefix>]\n");
                     exit(2);
             }
         } else {
-            fprintf(stderr, "Usage: fstime [-c|-r|-w] [-b <bufsize>] [-m <max_blocks>] [-t <seconds>]\n");
+            fprintf(stderr, "Usage: fstime [-c|-r|-w] [-b <bufsize>] [-m <max_blocks>] [-t <seconds>] [-p <prefix>]\n");
             exit(2);
         }
     }
@@ -174,23 +178,36 @@ char    *argv[];
     snprintf(FNAME0 + sizeof("dummy0"), sizeof(FNAME0) - sizeof("dummy0"), "%d", pid);
     snprintf(FNAME1 + sizeof("dummy1"), sizeof(FNAME1) - sizeof("dummy1"), "%d", pid);
 
-    if((f = creat(FNAME0, 0600)) == -1) {
+    // Add prefix to FNAME0 and FNAME1,
+    // Create FULL_PATH0 and FULL_PATH1
+    char FULL_PATH0[256];
+    char FULL_PATH1[256];
+
+    if (prefix) {
+            snprintf(FULL_PATH0, sizeof(FULL_PATH0), "%s/%s", prefix, FNAME0);
+            snprintf(FULL_PATH1, sizeof(FULL_PATH1), "%s/%s", prefix, FNAME1);
+    } else {
+            snprintf(FULL_PATH0, sizeof(FULL_PATH0), "%s", FNAME0);
+            snprintf(FULL_PATH1, sizeof(FULL_PATH1), "%s", FNAME1);
+    }
+
+    if((f = creat(FULL_PATH0, 0600)) == -1) {
             perror("fstime: creat");
             exit(1);
     }
     close(f);
 
-    if((g = creat(FNAME1, 0600)) == -1) {
+    if((g = creat(FULL_PATH1, 0600)) == -1) {
             perror("fstime: creat");
             exit(1);
     }
     close(g);
 
-    if( (f = open(FNAME0, 2)) == -1) {
+    if( (f = open(FULL_PATH0, 2)) == -1) {
             perror("fstime: open");
             exit(1);
     }
-    if( ( g = open(FNAME1, 2)) == -1 ) {
+    if( ( g = open(FULL_PATH1, 2)) == -1 ) {
             perror("fstime: open");
             exit(1);
     }
